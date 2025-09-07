@@ -1,0 +1,903 @@
+# YouTube AI Chatbot Extension
+
+## Project Structure
+```
+youtube-ai-chatbot/
+├── extension/
+│   ├── manifest.json
+│   ├── background.js
+│   ├── content.js
+│   ├── popup.html
+│   ├── popup.js
+│   ├── styles.css
+│   └── icons/
+│       ├── icon16.png
+│       ├── icon48.png
+│       └── icon128.png
+├── backend/
+│   ├── app.py
+│   ├── requirements.txt
+│   ├── rag_system.py
+│   └── config.py
+├── README.md
+└── install_guide.md
+```
+
+## File Contents:
+
+### 1. extension/manifest.json
+```json
+{
+  "manifest_version": 3,
+  "name": "YouTube AI Chatbot",
+  "version": "1.0.0",
+  "description": "AI-powered chatbot for YouTube videos using RAG",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube AI Chatbot",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
+```
+
+### 2. extension/content.js
+```javascript
+// YouTube AI Chatbot Content Script
+class YouTubeChatbot {
+  constructor() {
+    this.isActive = false;
+    this.currentVideoId = null;
+    this.chatContainer = null;
+    this.backendUrl = 'http://localhost:5000';
+    this.init();
+  }
+
+  init() {
+    this.createChatButton();
+    this.observeVideoChanges();
+    this.setupEventListeners();
+  }
+
+  createChatButton() {
+    // Create floating chat button
+    const chatButton = document.createElement('div');
+    chatButton.id = 'yt-ai-chat-button';
+    chatButton.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+      </svg>
+    `;
+    chatButton.title = 'AI Chat Assistant';
+    
+    document.body.appendChild(chatButton);
+    
+    // Make it draggable
+    this.makeDraggable(chatButton);
+    
+    chatButton.addEventListener('click', () => this.toggleChat());
+  }
+
+  createChatInterface() {
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'yt-ai-chat-container';
+    chatContainer.innerHTML = `
+      <div class="chat-header">
+        <span>AI Assistant</span>
+        <button class="close-btn" id="close-chat">×</button>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="message bot-message">
+          Hello! I can help you understand this YouTube video. Ask me anything!
+        </div>
+      </div>
+      <div class="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Ask about the video...">
+        <button id="send-btn">Send</button>
+      </div>
+    `;
+    
+    document.body.appendChild(chatContainer);
+    this.chatContainer = chatContainer;
+    
+    // Setup chat functionality
+    this.setupChatFunctionality();
+    
+    // Make it draggable
+    this.makeDraggable(chatContainer.querySelector('.chat-header'));
+  }
+
+  setupChatFunctionality() {
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const closeBtn = document.getElementById('close-chat');
+    
+    sendBtn.addEventListener('click', () => this.sendMessage());
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.sendMessage();
+    });
+    closeBtn.addEventListener('click', () => this.toggleChat());
+  }
+
+  async sendMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    this.addMessageToChat(message, 'user');
+    input.value = '';
+    
+    // Get current video ID
+    const videoId = this.getCurrentVideoId();
+    
+    try {
+      // Show loading
+      const loadingId = this.addMessageToChat('Thinking...', 'bot', true);
+      
+      // Send to backend
+      const response = await fetch(`${this.backendUrl}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          video_id: videoId
+        })
+      });
+      
+      const data = await response.json();
+      
+      // Remove loading message
+      document.getElementById(loadingId).remove();
+      
+      // Add bot response
+      this.addMessageToChat(data.response, 'bot');
+      
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById(loadingId).remove();
+      this.addMessageToChat('Sorry, there was an error processing your request.', 'bot');
+    }
+  }
+
+  addMessageToChat(message, sender, isLoading = false) {
+    const messagesContainer = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    const messageId = isLoading ? `loading-${Date.now()}` : `msg-${Date.now()}`;
+    
+    messageDiv.id = messageId;
+    messageDiv.className = `message ${sender}-message`;
+    messageDiv.textContent = message;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    return messageId;
+  }
+
+  getCurrentVideoId() {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('v');
+  }
+
+  observeVideoChanges() {
+    // Watch for URL changes (YouTube SPA)
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+      const url = location.href;
+      if (url !== lastUrl) {
+        lastUrl = url;
+        this.currentVideoId = this.getCurrentVideoId();
+      }
+    }).observe(document, { subtree: true, childList: true });
+  }
+
+  toggleChat() {
+    if (this.isActive) {
+      if (this.chatContainer) {
+        this.chatContainer.style.display = 'none';
+      }
+      this.isActive = false;
+    } else {
+      if (!this.chatContainer) {
+        this.createChatInterface();
+      }
+      this.chatContainer.style.display = 'block';
+      this.isActive = true;
+    }
+  }
+
+  makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    element.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+    
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      const targetElement = element.id === 'yt-ai-chat-button' ? element : element.parentElement;
+      targetElement.style.top = (targetElement.offsetTop - pos2) + "px";
+      targetElement.style.left = (targetElement.offsetLeft - pos1) + "px";
+    }
+    
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
+  setupEventListeners() {
+    // Listen for messages from popup
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      if (request.action === 'toggle-chat') {
+        this.toggleChat();
+      }
+    });
+  }
+}
+
+// Initialize when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new YouTubeChatbot();
+  });
+} else {
+  new YouTubeChatbot();
+}
+```
+
+### 3. extension/styles.css
+```css
+/* YouTube AI Chatbot Styles */
+#yt-ai-chat-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+#yt-ai-chat-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+#yt-ai-chat-container {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  display: none;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  opacity: 0.7;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.message {
+  margin-bottom: 15px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  max-width: 80%;
+  line-height: 1.4;
+  animation: messageSlide 0.3s ease;
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 6px;
+}
+
+.bot-message {
+  background: white;
+  color: #333;
+  border: 1px solid #e1e5e9;
+  border-bottom-left-radius: 6px;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 15px 20px;
+  border-top: 1px solid #e1e5e9;
+  background: white;
+  border-radius: 0 0 12px 12px;
+}
+
+#chat-input {
+  flex: 1;
+  border: 1px solid #e1e5e9;
+  border-radius: 20px;
+  padding: 10px 16px;
+  outline: none;
+  font-size: 14px;
+}
+
+#chat-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+#send-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 20px;
+  margin-left: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+#send-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #yt-ai-chat-container {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+    height: 60vh;
+  }
+  
+  #yt-ai-chat-button {
+    bottom: 80px;
+  }
+}
+```
+
+### 4. extension/popup.html
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h2 {
+      margin: 0;
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+    
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .info {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 15px;
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 13px;
+    }
+    
+    .status.active {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.inactive {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>YouTube AI Chatbot</h2>
+  </div>
+  
+  <div id="status" class="status inactive">
+    Backend Status: Checking...
+  </div>
+  
+  <button id="toggle-chat" class="button">
+    Toggle Chat Assistant
+  </button>
+  
+  <button id="open-settings" class="button">
+    Settings
+  </button>
+  
+  <div class="info">
+    Click the floating button on YouTube to start chatting!
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+```
+
+### 5. extension/popup.js
+```javascript
+// Popup functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleBtn = document.getElementById('toggle-chat');
+  const settingsBtn = document.getElementById('open-settings');
+  const statusDiv = document.getElementById('status');
+  
+  // Check backend status
+  checkBackendStatus();
+  
+  toggleBtn.addEventListener('click', function() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0].url.includes('youtube.com')) {
+        chrome.tabs.sendMessage(tabs[0].id, {action: 'toggle-chat'});
+        window.close();
+      } else {
+        alert('Please navigate to YouTube first!');
+      }
+    });
+  });
+  
+  settingsBtn.addEventListener('click', function() {
+    // Open settings page or show settings popup
+    alert('Settings coming soon!');
+  });
+  
+  async function checkBackendStatus() {
+    try {
+      const response = await fetch('http://localhost:5000/status');
+      if (response.ok) {
+        statusDiv.textContent = 'Backend Status: Connected';
+        statusDiv.className = 'status active';
+      } else {
+        throw new Error('Backend not responding');
+      }
+    } catch (error) {
+      statusDiv.textContent = 'Backend Status: Disconnected';
+      statusDiv.className = 'status inactive';
+    }
+  }
+});
+```
+
+### 6. extension/background.js
+```javascript
+// Background script
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('YouTube AI Chatbot extension installed');
+  
+  // Set default settings
+  chrome.storage.sync.set({
+    backendUrl: 'http://localhost:5000',
+    chatPosition: { bottom: 20, right: 20 }
+  });
+});
+
+// Handle extension icon click
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.url.includes('youtube.com')) {
+    chrome.tabs.sendMessage(tab.id, {action: 'toggle-chat'});
+  }
+});
+```
+
+### 7. backend/app.py
+```python
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from rag_system import RAGSystem
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+CORS(app)
+
+# Initialize RAG system
+rag_system = RAGSystem()
+
+@app.route('/status', methods=['GET'])
+def status():
+    return jsonify({"status": "active", "message": "Backend is running"})
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.json
+        message = data.get('message')
+        video_id = data.get('video_id')
+        
+        if not message:
+            return jsonify({"error": "Message is required"}), 400
+        
+        if not video_id:
+            return jsonify({"error": "Video ID is required"}), 400
+        
+        # Process the message with RAG system
+        response = rag_system.process_query(message, video_id)
+        
+        return jsonify({"response": response})
+    
+    except Exception as e:
+        logger.error(f"Error processing chat request: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/process-video', methods=['POST'])
+def process_video():
+    try:
+        data = request.json
+        video_id = data.get('video_id')
+        
+        if not video_id:
+            return jsonify({"error": "Video ID is required"}), 400
+        
+        # Process video transcript
+        result = rag_system.process_video(video_id)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Error processing video: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+```
+
+### 8. backend/requirements.txt
+```
+flask==2.3.3
+flask-cors==4.0.0
+youtube-transcript-api==0.6.1
+langchain==0.0.335
+langchain-google-genai==0.0.6
+langchain-community==0.0.10
+faiss-cpu==1.7.4
+python-dotenv==1.0.0
+requests==2.31.0
+```
+
+### 9. backend/rag_system.py
+```python
+import os
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_community.vectorstores import FAISS
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
+from dotenv import load_dotenv
+import logging
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+class RAGSystem:
+    def __init__(self):
+        self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=200
+        )
+        self.vector_stores = {}  # Store vector stores for different videos
+        self.setup_prompt()
+        
+    def setup_prompt(self):
+        self.prompt = PromptTemplate(
+            template="""
+            You are a helpful AI assistant for YouTube videos.
+            Answer ONLY from the provided transcript context.
+            If the context is insufficient, say you don't know and suggest they ask a more specific question.
+            Be conversational and helpful.
+
+            Context from video transcript:
+            {context}
+            
+            Human: {question}
+            
+            Assistant:""",
+            input_variables=['context', 'question']
+        )
+        
+    def get_video_transcript(self, video_id):
+    
+        """Extract transcript from YouTube video"""
+        YouTubeTranscriptApi = YouTubeTranscriptApi()
+        try:
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
+            transcript = " ".join(chunk["text"] for chunk in transcript_list)
+            return transcript
+        except TranscriptsDisabled:
+            logger.warning(f"No captions available for video {video_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting transcript for {video_id}: {str(e)}")
+            return None
+    
+    def process_video(self, video_id):
+        """Process video transcript and create vector store"""
+        if video_id in self.vector_stores:
+            return {"status": "already_processed", "video_id": video_id}
+        
+        transcript = self.get_video_transcript(video_id)
+        if not transcript:
+            return {"status": "error", "message": "Could not get transcript"}
+        
+        # Split text into chunks
+        chunks = self.text_splitter.create_documents([transcript])
+        
+        # Create vector store
+        vector_store = FAISS.from_documents(chunks, self.embeddings)
+        self.vector_stores[video_id] = vector_store
+        
+        logger.info(f"Processed video {video_id} with {len(chunks)} chunks")
+        return {"status": "processed", "video_id": video_id, "chunks": len(chunks)}
+    
+    def format_docs(self, retrieved_docs):
+        """Format retrieved documents for prompt"""
+        return "\n\n".join(doc.page_content for doc in retrieved_docs)
+    
+    def process_query(self, question, video_id):
+        """Process user query using RAG"""
+        # Ensure video is processed
+        if video_id not in self.vector_stores:
+            result = self.process_video(video_id)
+            if result["status"] == "error":
+                return "Sorry, I couldn't access the transcript for this video. Please make sure the video has captions available."
+        
+        vector_store = self.vector_stores[video_id]
+        retriever = vector_store.as_retriever(
+            search_type="similarity", 
+            search_kwargs={"k": 4}
+        )
+        
+        # Create RAG chain
+        chain = (
+            RunnableParallel({
+                'context': retriever | RunnableLambda(self.format_docs),
+                'question': RunnablePassthrough()
+            })
+            | self.prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        
+        try:
+            response = chain.invoke(question)
+            return response
+        except Exception as e:
+            logger.error(f"Error processing query: {str(e)}")
+            return "Sorry, there was an error processing your question. Please try again."
+```
+
+### 10. backend/config.py
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+    DEBUG = FLASK_ENV == 'development'
+    
+    # RAG Configuration
+    CHUNK_SIZE = 1000
+    CHUNK_OVERLAP = 200
+    SIMILARITY_TOP_K = 4
+    
+    # Model Configuration
+    EMBEDDING_MODEL = "models/embedding-001"
+    LLM_MODEL = "gemini-2.0-flash"
+    LLM_TEMPERATURE = 0.2
+```
+
+## Installation Guide
+
+### Prerequisites
+1. Google API Key for Gemini
+2. Python 3.8+
+3. Chrome/Edge browser
+
+### Backend Setup
+1. Navigate to backend directory:
+```bash
+cd backend
+```
+
+2. Create virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Create .env file:
+```bash
+echo "GOOGLE_API_KEY=your_google_api_key_here" > .env
+```
+
+5. Run the backend:
+```bash
+python app.py
+```
+
+### Extension Installation
+
+#### For Chrome:
+1. Open Chrome
+2. Go to `chrome://extensions/`
+3. Enable "Developer mode"
+4. Click "Load unpacked"
+5. Select the `extension` folder
+
+#### For Edge:
+1. Open Edge
+2. Go to `edge://extensions/`
+3. Enable "Developer mode"
+4. Click "Load unpacked"
+5. Select the `extension` folder
+
+### Usage
+1. Start the backend server
+2. Open YouTube
+3. Navigate to any video
+4. Click the floating chat button
+5. Start asking questions about the video!
+
+### Features
+- ✅ Floating draggable chat interface
+- ✅ Real-time conversation with video content
+- ✅ Works on all YouTube videos with captions
+- ✅ Responsive design for mobile/tablet
+- ✅ Automatic video transcript processing
+- ✅ Context-aware responses using RAG
+
+The chatbot will automatically appear when you visit YouTube and can be positioned anywhere on screen according to your preference.
