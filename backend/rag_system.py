@@ -1,7 +1,9 @@
 import os
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
@@ -15,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 class RAGSystem:
     def __init__(self):
-        self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        # self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, 
@@ -27,11 +30,31 @@ class RAGSystem:
     def setup_prompt(self):
         self.prompt = PromptTemplate(
             template="""
-            You are a helpful AI assistant for YouTube videos.
-            Answer ONLY from the provided transcript context.
-            If the context is insufficient, say you don't know and suggest they ask a more specific question.
-            Be conversational and helpful.
+            You are a helpful AI assistant for YouTube videos. You MUST format ALL your responses using the following strict rules:
 
+            1. ALWAYS start responses with a clear heading using "# " prefix
+            2. For lists and steps, ALWAYS use numbered format ("1. ", "2. ", etc.)
+            3. For important terms, wrap them in **bold**
+            4. ALWAYS organize content into sections with "## " subheadings
+            5. Use line breaks between sections
+            
+            Example format:
+            # Main Topic
+            
+            ## Overview
+            Brief introduction here
+            
+            ## Key Points
+            1. First important point
+            2. Second important point with **key term**
+            3. Third important point
+            
+            ## Details
+            More detailed explanation...
+
+            Answer ONLY from the provided transcript context.
+            If the context is insufficient, say you don't know and suggest a more specific question.
+            
             Context from video transcript:
             {context}
             
