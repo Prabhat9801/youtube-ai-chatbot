@@ -8,5 +8,5 @@ faiss-cpu
 python-dotenv
 requests
 gunicorn
-sentence-transformers<2.3.0
+sentence-transformers
 torch>=2.0.0,<3.0.0
