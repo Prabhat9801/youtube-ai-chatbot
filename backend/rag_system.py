@@ -18,11 +18,15 @@ logger = logging.getLogger(__name__)
 class RAGSystem:
     def __init__(self):
         # self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
+        # Use a smaller, more memory-efficient model
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-MiniLM-L3-v2",
+            model_kwargs={'device': 'cpu'}
+        )
+        self.llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro", temperature=0.2)
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, 
-            chunk_overlap=200
+            chunk_size=500,  # Smaller chunks
+            chunk_overlap=50  # Less overlap
         )
         self.vector_stores = {}  # Store vector stores for different videos
         self.setup_prompt()
