@@ -20,7 +20,7 @@ class RAGSystem:
         # self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         # Use a smaller, more memory-efficient model
         self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-MiniLM-L3-v2",
+            model_name="all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'}
         )
         self.llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro", temperature=0.2)
