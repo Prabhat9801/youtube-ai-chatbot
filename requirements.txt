@@ -4,7 +4,7 @@ youtube-transcript-api
 langchain
 langchain-google-genai
 langchain-community
-faiss-cpu<1.7.4
+faiss-cpu
 python-dotenv
 requests
 gunicorn
