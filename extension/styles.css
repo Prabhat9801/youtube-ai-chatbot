@@ -88,6 +88,74 @@
   animation: messageSlide 0.3s ease;
 }
 
+/* Formatted message styles */
+.bot-message .chat-h2 {
+  font-size: 1.3em;
+  margin: 15px 0 10px 0;
+  color: #2c3e50;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 5px;
+}
+
+.bot-message .chat-h3 {
+  font-size: 1.1em;
+  margin: 12px 0 8px 0;
+  color: #34495e;
+  font-weight: 600;
+}
+
+.bot-message .chat-list-item {
+  margin: 8px 0;
+  padding-left: 8px;
+  position: relative;
+}
+
+.bot-message .chat-section-break {
+  height: 12px;
+}
+
+.bot-message strong {
+  color: #2980b9;
+  font-weight: 600;
+}
+
+/* Additional spacing and style improvements */
+.bot-message {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.message.bot-message {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.bot-message strong {
+  font-weight: 600;
+}
+
+.bot-message br {
+  margin-bottom: 5px;
+}
+
+/* Bullet points and lists */
+.bot-message ul {
+  margin: 5px 0 5px 20px;
+  padding-left: 0;
+}
+
+.bot-message li {
+  margin: 3px 0;
+}
+
+/* Add spacing between sections */
+.bot-message > *:not(:last-child) {
+  margin-bottom: 10px;
+}
+
 @keyframes messageSlide {
   from {
     opacity: 0;

@@ -122,6 +122,32 @@ class YouTubeChatbot {
     }
   }
 
+  formatMessage(message) {
+    // First, escape any HTML to prevent XSS
+    message = message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Convert markdown to HTML
+    
+    // Headers (process these first)
+    message = message.replace(/^# (.*?)$/gm, '<h2 class="chat-h2">$1</h2>');
+    message = message.replace(/^## (.*?)$/gm, '<h3 class="chat-h3">$1</h3>');
+    
+    // Numbered lists (keep numbers)
+    message = message.replace(/^\d+\.\s+(.*?)$/gm, '<div class="chat-list-item">$&</div>');
+    
+    // Bold text
+    message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Line breaks (add spacing between sections)
+    message = message.replace(/\n\n/g, '<div class="chat-section-break"></div>');
+    message = message.replace(/\n/g, '<br>');
+    
+    return message;
+  }
+
   addMessageToChat(message, sender, isLoading = false) {
     const messagesContainer = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
@@ -129,7 +155,13 @@ class YouTubeChatbot {
     
     messageDiv.id = messageId;
     messageDiv.className = `message ${sender}-message`;
-    messageDiv.textContent = message;
+    
+    // Use innerHTML for formatted messages from bot, textContent for user messages
+    if (sender === 'bot' && !isLoading) {
+      messageDiv.innerHTML = this.formatMessage(message);
+    } else {
+      messageDiv.textContent = message;
+    }
     
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
