@@ -133,6 +133,168 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
+/* Code blocks */
+.chat-code-block {
+  background: #2d2d2d;
+  color: #cccccc;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-family: 'Consolas', monospace;
+  overflow-x: auto;
+}
+
+.chat-inline-code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Consolas', monospace;
+  color: #e83e8c;
+}
+
+/* Timeline */
+.chat-timeline-item {
+  position: relative;
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+.timeline-date {
+  color: #2980b9;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.timeline-connector {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e0e0e0;
+}
+
+/* Definition lists */
+.chat-definition {
+  margin: 10px 0;
+}
+
+.chat-definition dt {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.chat-definition dd {
+  margin-left: 20px;
+  color: #34495e;
+}
+
+/* Blockquotes */
+.chat-quote {
+  border-left: 4px solid #3498db;
+  padding: 10px;
+  margin: 10px 0;
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-style: italic;
+}
+
+/* Horizontal rules */
+.chat-hr {
+  border: none;
+  border-top: 2px solid #e0e0e0;
+  margin: 15px 0;
+}
+
+/* Lists */
+.chat-list-item {
+  margin: 8px 0;
+}
+
+.chat-list-item.bullet::before {
+  content: "•";
+  color: #3498db;
+  margin-right: 8px;
+}
+
+.chat-list-item.sub-bullet {
+  margin-left: 20px;
+}
+
+.chat-list-item.sub-bullet::before {
+  content: "◦";
+  color: #95a5a6;
+  margin-right: 8px;
+}
+
+.chat-list-item.numbered {
+  color: #2c3e50;
+}
+
+/* Headers */
+.chat-h4 {
+  font-size: 1em;
+  margin: 10px 0 5px 0;
+  color: #455a64;
+  font-weight: 600;
+}
+
+/* Table styles */
+.chat-table {
+  width: 100%;
+  margin: 15px 0;
+  background: white;
+  border: 2px solid #2c3e50;
+  border-collapse: collapse;
+}
+
+.chat-table .table-row:first-child {
+  background: #f8f9fa;
+  font-weight: bold;
+  color: #2c3e50;
+  border-bottom: 2px solid #2c3e50;
+}
+
+.table-row {
+  display: flex;
+  border-bottom: 1px solid #2c3e50;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  flex: 1;
+  padding: 12px 15px;
+  border-right: 1px solid #2c3e50;
+  line-height: 1.5;
+  min-width: 0;
+  word-wrap: break-word;
+  font-size: 14px;
+}
+
+.table-cell:first-child {
+  font-weight: bold;
+  background: #f8f9fa;
+  width: 200px;
+  flex: none;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+/* Alternating row colors */
+.table-row:nth-child(even):not(:first-child) {
+  background: #f8f9fa;
+}
+
+/* Hover effect */
+.table-row:not(:first-child):hover {
+  background: #f8f9fa;
+}
+
 .bot-message strong {
   font-weight: 600;
 }

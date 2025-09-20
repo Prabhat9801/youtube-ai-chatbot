@@ -131,17 +131,58 @@ class YouTubeChatbot {
     
     // Convert markdown to HTML
     
-    // Headers (process these first)
+    // Headers
     message = message.replace(/^# (.*?)$/gm, '<h2 class="chat-h2">$1</h2>');
     message = message.replace(/^## (.*?)$/gm, '<h3 class="chat-h3">$1</h3>');
+    message = message.replace(/^### (.*?)$/gm, '<h4 class="chat-h4">$1</h4>');
     
-    // Numbered lists (keep numbers)
-    message = message.replace(/^\d+\.\s+(.*?)$/gm, '<div class="chat-list-item">$&</div>');
+    // Code blocks
+    message = message.replace(/```(\w*)\n([\s\S]*?)\n```/g, 
+      '<pre class="chat-code-block"><code class="language-$1">$2</code></pre>');
+    
+    // Inline code
+    message = message.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>');
+    
+    // Timeline
+    message = message.replace(/^\[(.*?)\](.*?)$/gm, 
+      '<div class="chat-timeline-item"><span class="timeline-date">[$1]</span>$2</div>');
+    message = message.replace(/│/g, '<div class="timeline-connector"></div>');
+    
+    // Definition lists
+    message = message.replace(/^(.*?)\n:(.*?)$/gm, 
+      '<dl class="chat-definition"><dt>$1</dt><dd>$2</dd></dl>');
+    
+    // Blockquotes
+    message = message.replace(/^> (.*?)$/gm, '<blockquote class="chat-quote">$1</blockquote>');
+    
+    // Horizontal rules
+    message = message.replace(/^---$/gm, '<hr class="chat-hr">');
+    
+    // Lists
+    message = message.replace(/^\d+\.\s+(.*?)$/gm, '<div class="chat-list-item numbered">$&</div>');
+    message = message.replace(/^-\s+(.*?)$/gm, '<div class="chat-list-item bullet">$1</div>');
+    message = message.replace(/^\s\s-\s+(.*?)$/gm, '<div class="chat-list-item sub-bullet">$1</div>');
     
     // Bold text
     message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    // Line breaks (add spacing between sections)
+    // Tables
+    message = message.replace(/\|(.+)\|/g, (match, content) => {
+      const cells = content.split('|').map(cell => cell.trim());
+      return `<div class="table-row">${cells.map(cell => 
+        `<div class="table-cell">${cell}</div>`).join('')}</div>`;
+    });
+    message = message.replace(/<div class="table-row">(<div class="table-cell">-+<\/div>)+<\/div>/g, '');
+    message = message.replace(
+      /(<div class="table-row">.*?<\/div>)\s*(<div class="table-row">)/g, 
+      '<div class="chat-table">$1$2'
+    );
+    message = message.replace(
+      /(<div class="table-row">.*?<\/div>)(?!\s*<div class="table-row">)/g,
+      '$1</div>'
+    );
+    
+    // Line breaks and spacing
     message = message.replace(/\n\n/g, '<div class="chat-section-break"></div>');
     message = message.replace(/\n/g, '<br>');
     
