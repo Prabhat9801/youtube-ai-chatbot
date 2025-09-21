@@ -7,3 +7,6 @@ langchain-community
 faiss-cpu
 python-dotenv
 requests
+gunicorn
+sentence-transformers
+torch
