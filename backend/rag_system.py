@@ -1,9 +1,10 @@
 import os
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
@@ -20,7 +21,7 @@ class RAGSystem:
         # self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         # Use a smaller, more memory-efficient model
         self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        self.llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro", temperature=0.2)
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,  # Smaller chunks
             chunk_overlap=50  # Less overlap
