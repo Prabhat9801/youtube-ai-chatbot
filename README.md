@@ -199,6 +199,25 @@ Impact: Comprehensive research notes generated automatically
 
 ### **Traditional Learning vs AI-Enhanced Learning**
 
+#### Visual Workflow Comparison
+
+**Traditional Method:**
+```
+📺 Watch Video → 📝 Take Manual Notes → ⏪ Rewatch Sections → 🔍 Search External Sources → 📋 Compile Information → 📚 Study Notes
+```
+⏱️ **Time Required:** 3-4 hours total
+
+**AI-Enhanced Method:**
+```
+📺 Watch Video → 💬 Ask AI Questions → ⚡ Get Instant Answers → ❓ Clarify Doubts → 🎯 Interactive Learning → 🧠 Better Understanding
+```
+⏱️ **Time Required:** 2 hours + instant Q&A
+
+**📊 Efficiency Gain: 50-100%**
+
+<details>
+<summary>🎨 Interactive Workflow Diagram (Click to expand)</summary>
+
 ```mermaid
 graph LR
     subgraph "Traditional Method"
@@ -229,10 +248,7 @@ graph LR
     end
 ```
 
-**Time Comparison:**
-- Traditional: 3-4 hours total
-- AI-Enhanced: 2 hours + instant Q&A
-- **Efficiency Gain: 50-100%**
+</details>
 
 ### **vs. Traditional Note-Taking Apps**
 | Feature | Note-Taking Apps | Our AI Chatbot |
@@ -366,6 +382,21 @@ Similar process - enable developer mode and load the unpacked extension.
 
 ### User Journey Visualization
 
+#### Learning Journey Steps
+```
+🛠️ Setup → 🎯 Discovery → 💬 Interaction → 📚 Learning → 🎓 Mastery
+```
+
+**Detailed Journey:**
+1. **🛠️ Setup Phase**: Install Extension (⭐⭐⭐⭐⭐) → Start Backend (⭐⭐⭐⭐) → Get API Key (⭐⭐⭐)
+2. **🎯 Discovery Phase**: Open YouTube (⭐⭐⭐⭐⭐) → Notice Chat Button (⭐⭐⭐⭐) → Click to Start (⭐⭐⭐⭐⭐)
+3. **💬 Interaction Phase**: Ask First Question (⭐⭐⭐⭐⭐) → Receive AI Answer (⭐⭐⭐⭐⭐) → Ask Follow-up (⭐⭐⭐⭐⭐) → Get Context-Aware Response (⭐⭐⭐⭐⭐)
+4. **📚 Learning Phase**: Understand Concept (⭐⭐⭐⭐⭐) → Ask for Examples (⭐⭐⭐⭐) → Request Summary (⭐⭐⭐⭐) → Take Mental Notes (⭐⭐⭐⭐⭐)
+5. **🎓 Mastery Phase**: Apply Knowledge (⭐⭐⭐⭐⭐) → Share with Others (⭐⭐⭐⭐) → Rate Experience (⭐⭐⭐⭐⭐)
+
+<details>
+<summary>🎨 Interactive Journey Map (Click to expand)</summary>
+
 ```mermaid
 journey
     title YouTube AI Chatbot User Experience
@@ -393,7 +424,24 @@ journey
       Rate Experience: 5: User
 ```
 
+</details>
+
 ### Step-by-Step Visual Guide
+
+#### Quick Start Process
+```
+📱 Install Extension → 🔑 Setup API Key → 🚀 Start Backend → 🎥 Open YouTube Video → 👁️ Look for Chat Button → 💬 Click Chat Button → ❓ Ask Your Question → 🤖 AI Processes Query → 📝 Receive Answer
+```
+
+#### Decision Flow
+```
+❓ More Questions? 
+├── ✅ Yes → 💬 Ask Another Question
+└── ❌ No → ✅ Learning Complete
+```
+
+<details>
+<summary>🎨 Interactive Process Diagram (Click to expand)</summary>
 
 ```mermaid
 graph TD
@@ -414,6 +462,8 @@ graph TD
     style I fill:#e8f5e8
     style K fill:#fff3e0
 ```
+
+</details>
 
 ### Basic Usage
 
@@ -454,6 +504,24 @@ AI: Based on the video transcript, there are three main types of machine learnin
 ## 🔄 System Workflow
 
 ### Overall System Architecture
+
+#### Simplified Flow Diagram
+```
+📺 YouTube Video → 🔌 Browser Extension → 🆔 Extract Video ID → 📡 Send to Backend API 
+     ↓
+🎬 YouTube Transcript API → 🔄 RAG Processing Pipeline → 🗃️ Vector Database 
+     ↓
+🤖 AI Response Generation → 📝 Formatted Response → 💻 Extension UI → 👤 User Interaction
+```
+
+#### Backend Processing Pipeline
+```
+📄 Text Chunking → 🧮 Embedding Generation → 🗄️ FAISS Vector Store → 🔍 Similarity Search → 📋 Context Retrieval → 🤖 Gemini AI → 📝 Response
+```
+
+<details>
+<summary>🎨 Detailed Technical Diagram (Click to expand)</summary>
+
 ```mermaid
 graph TB
     A[YouTube Video] --> B[Browser Extension]
@@ -483,7 +551,27 @@ graph TB
     style N fill:#96ceb4
 ```
 
+</details>
+
 ### User Interaction Flow
+
+#### Step-by-Step Process
+```
+1. 👤 User opens YouTube Video
+2. 🔌 Extension detects Video ID
+3. 📡 Extension requests video processing
+4. 🎬 Backend fetches transcript
+5. 🔄 System processes and stores data
+6. ✅ Ready for questions
+7. 💬 User asks question
+8. 🔍 System searches relevant content
+9. 🤖 AI generates response
+10. 📝 User receives formatted answer
+```
+
+<details>
+<summary>🎨 Detailed Sequence Diagram (Click to expand)</summary>
+
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -522,7 +610,25 @@ sequenceDiagram
     E-->>U: Context-Aware Response
 ```
 
+</details>
+
 ### RAG (Retrieval-Augmented Generation) Process
+
+#### RAG Pipeline Overview
+```
+📄 Video Transcript → 🔄 Text Preprocessing → ✂️ Chunking Strategy → 🧮 Sentence Transformers → 🗃️ Vector Embeddings → 📊 FAISS Index
+
+💬 User Question → 🧮 Query Embedding → 🔍 Similarity Search → 📋 Top-K Retrieval → 📝 Context Assembly → 🎯 Prompt Engineering → 🤖 Gemini AI → 📝 Response Generation → 📄 Answer Formatting
+```
+
+#### Process Breakdown
+- **📥 Embedding Phase**: Convert text to numerical vectors
+- **🔍 Retrieval Phase**: Find relevant content using similarity
+- **🤖 Generation Phase**: Create contextual responses
+
+<details>
+<summary>🎨 Detailed RAG Flow Diagram (Click to expand)</summary>
+
 ```mermaid
 flowchart LR
     A[Video Transcript] --> B[Text Preprocessing]
@@ -569,6 +675,8 @@ flowchart LR
     style M fill:#f3e5f5
     style O fill:#e8f5e8
 ```
+
+</details>
 
 ### Extension Integration Workflow
 ```mermaid
