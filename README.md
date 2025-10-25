@@ -8,6 +8,14 @@
 
 A revolutionary browser extension that transforms your YouTube learning experience by adding an intelligent AI chatbot capable of answering questions about video content in real-time. Built with cutting-edge RAG (Retrieval-Augmented Generation) technology powered by Google's Gemini AI.
 
+## ▶️ Demo
+
+Watch a short demo of the system in action:
+
+Demo video (Google Drive): https://drive.google.com/file/d/15ehyv1vIpWNObz4F4J0WZ46BPRlav1YA/view?usp=sharing
+
+You can open the link in your browser to see the extension and backend workflow demonstrated end-to-end.
+
 ## 🎯 Problems We Solve
 
 ### The Learning Challenge
