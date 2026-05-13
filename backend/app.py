@@ -1,66 +1,101 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from rag_system import RAGSystem
 import logging
+import time
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from rag_system import RAGSystem
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI(title="YouTube AI Chatbot Backend")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class ChatRequest(BaseModel):
+    message: str
+    video_id: str
+    history: Optional[List[Dict[str, Any]]] = []
+
+
+class ProcessVideoRequest(BaseModel):
+    video_id: str
+
 
 # Initialize RAG system
 rag_system = RAGSystem()
 
-@app.route('/status', methods=['GET'])
-def status():
-    return jsonify({"status": "active", "message": "Backend is running"})
 
-@app.route('/chat', methods=['POST'])
-def chat():
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
     try:
-        data = request.json
-        message = data.get('message')
-        video_id = data.get('video_id')
-        history = data.get('history', [])
-        
-        if not message:
-            return jsonify({"error": "Message is required"}), 400
-        
-        if not video_id:
-            return jsonify({"error": "Video ID is required"}), 400
-        
-        # Process the message with RAG system, passing history
-        response = rag_system.process_query(message, video_id, history)
-        
-        return jsonify({"response": response})
-    
-    except Exception as e:
-        logger.error(f"Error processing chat request: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error("Unhandled error on %s %s: %s", request.method, request.url.path, str(exc))
+        raise
+    duration_ms = (time.time() - start_time) * 1000
+    logger.info("%s %s -> %s (%.1f ms)", request.method, request.url.path, response.status_code, duration_ms)
+    return response
 
-@app.route('/process-video', methods=['POST'])
-def process_video():
+
+@app.get("/status")
+def status() -> Dict[str, str]:
+    return {"status": "active", "message": "Backend is running"}
+
+
+@app.get("/health")
+def health() -> Dict[str, Any]:
+    return {"ok": True, "llm": "groq", "embeddings": "fastembed"}
+
+
+@app.post("/chat")
+def chat(payload: ChatRequest) -> Dict[str, str]:
     try:
-        data = request.json
-        video_id = data.get('video_id')
-        
-        if not video_id:
-            return jsonify({"error": "Video ID is required"}), 400
-        
-        # Process video transcript
-        result = rag_system.process_video(video_id)
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        logger.error(f"Error processing video: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-@app.route('/', methods=['GET'])
-def home():
-    return "Welcome to the YouTube AI Chatbot Backend!"
+        if not payload.message:
+            raise HTTPException(status_code=400, detail="Message is required")
+        if not payload.video_id:
+            raise HTTPException(status_code=400, detail="Video ID is required")
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        response = rag_system.process_query(
+            payload.message,
+            payload.video_id,
+            payload.history or [],
+        )
+        return {"response": response}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Error processing chat request: %s", str(exc))
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/process-video")
+def process_video(payload: ProcessVideoRequest) -> Dict[str, Any]:
+    try:
+        if not payload.video_id:
+            raise HTTPException(status_code=400, detail="Video ID is required")
+
+        result = rag_system.process_video(payload.video_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Error processing video: %s", str(exc))
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/")
+def home() -> Dict[str, str]:
+    return {"message": "Welcome to the YouTube AI Chatbot Backend!"}

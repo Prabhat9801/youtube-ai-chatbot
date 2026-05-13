@@ -89,24 +89,45 @@ class YouTubeChatbot {
     // Get current video ID
     const videoId = this.getCurrentVideoId();
     
+    let loadingId = null;
     try {
       // Show loading
-      const loadingId = this.addMessageToChat('Thinking...', 'bot', true);
+      loadingId = this.addMessageToChat('Thinking...', 'bot', true);
+
+      if (!videoId) {
+        throw new Error('No video ID found. Open a YouTube video page.');
+      }
       
       // Send to backend
-      const response = await fetch(`${this.backendUrl}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message,
-          video_id: videoId,
-          history: this.conversationHistory
-        })
+      const response = await chrome.runtime.sendMessage({
+        action: 'api-request',
+        payload: {
+          url: `${this.backendUrl}/chat`,
+          options: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              message: message,
+              video_id: videoId,
+              history: this.conversationHistory
+            })
+          }
+        }
       });
-      
-      const data = await response.json();
+
+      if (!response) {
+        throw new Error('No response from extension. Please reload the page and try again.');
+      }
+
+      if (!response.ok) {
+        const status = response.status ? response.status : 'unknown';
+        const detail = response.text ? response.text : 'No response from backend';
+        throw new Error(`Backend error: ${status} ${detail}`);
+      }
+
+      const data = JSON.parse(response.text);
       
       // Remove loading message
       document.getElementById(loadingId).remove();
@@ -117,8 +138,14 @@ class YouTubeChatbot {
       
     } catch (error) {
       console.error('Error:', error);
-      document.getElementById(loadingId).remove();
-      this.addMessageToChat('Sorry, there was an error processing your request.', 'bot');
+      if (loadingId) {
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
+      }
+      this.addMessageToChat(
+        'Sorry, there was an error reaching the backend. Make sure it is running on http://localhost:5000.',
+        'bot'
+      );
     }
   }
 

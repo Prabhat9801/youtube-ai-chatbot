@@ -1,13 +1,11 @@
-flask
-flask-cors
+fastapi
+uvicorn
 youtube-transcript-api
 langchain
-langchain-google-genai
+langchain-openai
 langchain-community
 faiss-cpu
 python-dotenv
 requests
 gunicorn
-sentence-transformers
-torch
-langchain-huggingface
+fastembed

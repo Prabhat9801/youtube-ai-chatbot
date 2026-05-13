@@ -1,15 +1,17 @@
 import os
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 # from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+
+from config import Config
 import logging
 
 load_dotenv()
@@ -19,12 +21,20 @@ logger = logging.getLogger(__name__)
 class RAGSystem:
     def __init__(self):
         # self.embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        # Use a smaller, more memory-efficient model
-        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2)
+        # Fast, lightweight embeddings for quicker startup
+        self.embeddings = FastEmbedEmbeddings(model_name=Config.EMBEDDING_MODEL)
+        cerebras_api_key = Config.CEREBRAS_API_KEY
+        if not cerebras_api_key:
+            raise ValueError("CEREBRAS_API_KEY is not set. Add it to your backend .env file.")
+        self.llm = ChatOpenAI(
+            model=Config.LLM_MODEL,
+            temperature=Config.LLM_TEMPERATURE,
+            api_key=cerebras_api_key,
+            base_url=Config.CEREBRAS_BASE_URL,
+        )
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,  # Smaller chunks
-            chunk_overlap=50  # Less overlap
+            chunk_size=Config.CHUNK_SIZE,
+            chunk_overlap=Config.CHUNK_OVERLAP
         )
         self.vector_stores = {}  # Store vector stores for different videos
         self.setup_prompt()
@@ -160,8 +170,8 @@ class RAGSystem:
         
         vector_store = self.vector_stores[video_id]
         retriever = vector_store.as_retriever(
-            search_type="similarity", 
-            search_kwargs={"k": 4}
+            search_type="similarity",
+            search_kwargs={"k": Config.SIMILARITY_TOP_K}
         )
         
         # Build conversation context from history
